@@ -6,6 +6,7 @@ dependencies:
   - numpy
   - pandas
   - flask
+  - dotenv
   - pip
   - pip:
       - tensorflow

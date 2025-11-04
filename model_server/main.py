@@ -5,7 +5,7 @@ import base64
 app = Flask(__name__)
 
 # Yemek tahmin eder
-@app.route('/')
+@app.route('/', methods=["POST"])
 def predict():
     # Gelen fotoğrafı byte haline getir
     photo_b64 = request.json.get("image")  

@@ -7,8 +7,8 @@ from keras.applications.efficientnet import preprocess_input as efficientnet_pre
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
 from dotenv import load_dotenv
 
-# Ayarlar
-height, width = 256, 256
+# Parametreler
+height, width = 300, 300
 batch_Size = 16
 load_dotenv()   
 data_dir = pathlib.Path(os.getenv("dataset_path"))
@@ -61,11 +61,8 @@ data_augmentation = keras.Sequential([
     tf.keras.layers.RandomBrightness(0.1),
 ], name="data_augmentation")
 
-# Uygula (augmentation CPU'da çalışır)
-train_ds = train_ds.map(lambda x, y: (data_augmentation(x, training=True), y),
-                        num_parallel_calls=tf.data.AUTOTUNE)
-
-# Prefetch
+# Veriseti hazırlama
+train_ds = train_ds.map(lambda x, y: (data_augmentation(x, training=True), y), num_parallel_calls=tf.data.AUTOTUNE)
 train_ds = train_ds.prefetch(tf.data.AUTOTUNE)
 val_ds = val_ds.prefetch(tf.data.AUTOTUNE)
 
@@ -73,7 +70,7 @@ val_ds = val_ds.prefetch(tf.data.AUTOTUNE)
 base_model = EfficientNetB3(weights="imagenet", include_top=False, input_shape=(height, width, 3))
 base_model.trainable = False
 
-# Learning rate schedule için steps_per_epoch al
+# Learning rate schedule 
 card = tf.data.experimental.cardinality(train_ds)
 try:
     steps_per_epoch = int(card.numpy())
@@ -92,7 +89,7 @@ lr_schedule = tf.keras.optimizers.schedules.CosineDecayRestarts(
 )
 optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
 
-# Loss ve ön hazırlık
+# Loss ve one-hot encoding
 train_ds = train_ds.map(lambda x, y: (x, tf.one_hot(y, depth=num_classes)))
 val_ds = val_ds.map(lambda x, y: (x, tf.one_hot(y, depth=num_classes)))
 loss = tf.keras.losses.CategoricalCrossentropy(label_smoothing=0.1)
@@ -102,11 +99,10 @@ inputs = layers.Input(shape=(height, width, 3))
 x = efficientnet_preprocess(inputs)  
 x = base_model(x, training=False)
 x = layers.GlobalAveragePooling2D()(x)
-x = layers.Dropout(0.4)(x)
+x = layers.Dropout(0.3)(x)
 outputs = layers.Dense(num_classes, activation="softmax")(x)
 
 model = keras.Model(inputs, outputs)
-
 model.compile(
     optimizer=optimizer,
     loss=loss,
@@ -122,7 +118,7 @@ early_stop = EarlyStopping(monitor='val_accuracy', patience=4, restore_best_weig
 history = model.fit(
     train_ds,
     validation_data=val_ds,
-    epochs=8,
+    epochs=10,
     callbacks=[checkpoint_cb, reduce_lr, early_stop]
 )
 
@@ -141,6 +137,6 @@ model.compile(
 history_fine = model.fit(
     train_ds,
     validation_data=val_ds,
-    epochs=6,
+    epochs=8,
     callbacks=[checkpoint_cb, reduce_lr, early_stop]
 )

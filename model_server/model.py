@@ -1,4 +1,4 @@
-from tensorflow.keras.models import load_model
+from keras.models import load_model
 from keras.applications.efficientnet import preprocess_input
 import numpy as np
 from PIL import Image
@@ -11,7 +11,7 @@ model = load_model(r"model/efficientnetb3_food_model.keras")
 
 def predict_food(food_photo):
     # Veri hazırlama
-    food_img = Image.open(io.BytesIO(food_photo)).convert("RGB").resize((256, 256))
+    food_img = Image.open(io.BytesIO(food_photo)).convert("RGB").resize((300, 300))
     food_img_arr = np.array(food_img, dtype=np.float32)
     food_img_arr = np.expand_dims(food_img_arr, axis=0)
     food_img_arr = preprocess_input(food_img_arr)
